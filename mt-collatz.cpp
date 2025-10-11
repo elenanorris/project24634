@@ -1,12 +1,14 @@
 #include <iostream>
 #include <thread>
+#include <mutex>
 #include <vector>
 #include <string>
+#include <fstream>
 #include <chrono>
 using namespace std;
 
 vector<chrono::duration<double>> histogramArray; // stores the computed times of the Collatz sequence for specific integers n from collatzCompute()
-int COUNTER = 1; // used for thread management
+mutex histMutex; // ensures only one thread accesses a shared resource at a time
 
 /*
 Below is the helper function for collatzCompute().
@@ -46,39 +48,89 @@ void collatzCompute(int n) {
     chrono::duration<double> collatzComputationTime = getDuration(start, end);
     
     // Stores the collatzComputation time in histogramArray vector
+    lock_guard<mutex> lock(histMutex);
     histogramArray.push_back(collatzComputationTime);
+}
+
+void writeCSV() {
+    fstream fout; // file pointer
+
+    fout.open("collatzTime.csv", ios::out); // opens existing .csv file or creates new file
+    
+    for (int i = 0; i < histogramArray.size(); i++) {
+        fout << histogramArray[i].count() << "\n";
+    }
+    fout.close();
 }
 
 int main() {
     auto histogramArrayStart = chrono::high_resolution_clock::now();
     int T = 4; // num of threads
-    int N = 10; // range of numbers for a Collatz sequence to be computed
+    int N = 1000; // range of numbers for a Collatz sequence to be computed
+
+    // Trivial case handling
+    if (T <= 0) {
+        T = 1;
+    }
+    if (N <= 0) {
+        return 0; // end program outright
+    }
+    if (T > N) { // avoids creating more threads than units of work
+        T = N;
+    }
+
+    
+    // Computing chunk sizes for dividing workload of sequence computation among threads 
+    int base = N / T;
+    int remainder = N % T;
 
     vector<thread> threads;
+    threads.reserve(T);
 
-
-    while (COUNTER <= N) {
-        for (int i = 0; i < T; i++) {
-            threads.push_back(thread(collatzCompute, COUNTER));
-            COUNTER++;
+    // Create T threads, with each thread computing a distinct chunk of the sequence [0, N-1]
+    for (int threadID = 0; threadID < T; threadID++) {
+        int start = (threadID * base) + min(threadID, remainder); // compute where thread's chunk starts in sequence
+        int count; // how many elements thread will compute
+        if (threadID < remainder) {
+            count = base + 1; // threads with threadID < remainder will get one extra element to cover the remainder
         }
-        cout << "# Threads: " << threads.size() << endl;
+        else {
+            count = base;
+        }
+        int end = start + count; // end index for reach thread
+
+        // Have threads process to compute their Collatz sequence chunks and store their times in histogramArray
+        threads.emplace_back([start, end]() {
+            for (int i = start; i < end; i++) {
+                collatzCompute(i + 1); // each thread processes its chunk. Collatz are 
+            }
+            });
+
+        
     }
+
+    // Joining all threads
     for (auto& th : threads) {
-        th.join();
+        if (th.joinable()) {
+            th.join();
+        }
     }
 
     auto histogramArrayEnd = chrono::high_resolution_clock::now();
-    // Print elapsed time of program execution
-    // Print histogramArray
-    //Terminate programs and threads
-
-
+    
+    chrono::duration<double> histogramArrayTime = getDuration(histogramArrayStart, histogramArrayEnd);
+    
 
     // testing: prints times in histogramArray
-    for (int i = 0; i < histogramArray.size(); i++) { 
+    /*for (int i = 0; i < histogramArray.size(); i++) { 
         cout << "Collatz Computation Time: " << histogramArray[i].count() << endl; 
-    } 
+    } */
+
+    if (histogramArray.size() == 0) {
+        cerr << "An error occurred with storing computation times inside the histogramArray. It is empty." << endl;
+    }
+    
+    writeCSV();
 
     return 0;
 }
@@ -92,7 +144,11 @@ Sources:
 [3] Multithreading in C++ Pt. 2: https://www.educative.io/courses/modern-cpp-concurrency-in-practice-get-the-most-out-of-any-machine/multithreading-in-cpp
 [4] Collatz sequence in C++: https://www.geeksforgeeks.org/dsa/program-to-print-collatz-sequence/
 [5] Multithreading vs. Multiprocessing (with Python): https://builtin.com/data-science/multithreading-multiprocessing
-*/
+[6] .reserve() method for C++ vectors: https://en.cppreference.com/w/cpp/container/vector/reserve
+[7] Threading with chunking: https://stackoverflow.com/questions/49368207/using-threading-to-slice-an-array-into-chunks-and-perform-calculation-on-each-ch
+[8] .emplace_back() for C++ vectors: https://en.cppreference.com/w/cpp/container/vector/emplace_back
+[9] Lambda functions in C++: https://www.w3schools.com/cpp/cpp_functions_lambda.asp
+[10] Mutex lock for thread synchronization: https://www.geeksforgeeks.org/linux-unix/mutex-lock-for-linux-thread-synchronization/
+[11] Writing elements of a vector to a .CSV file in C++: https://www.geeksforgeeks.org/cpp/csv-file-management-using-c/
 
-// Issue: Triple the amount of threads is being made in the While loop.
-// Only want 4 threads, is making 12 threads total with current inputs.
+*/
