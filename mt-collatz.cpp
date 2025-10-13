@@ -9,7 +9,9 @@ using namespace std;
 
 vector<chrono::duration<double>> histogramArray; // stores the computed times of the Collatz sequence for specific integers n from collatzCompute()
 mutex histMutex; // ensures only one thread accesses a shared resource at a time
-
+bool locking = true;
+long N;
+int T;
 /*
 Below is the helper function for collatzCompute().
 It returns the duration of an operation by computing the difference
@@ -46,11 +48,34 @@ void collatzCompute(int n) {
 
     // Computes time it took for collatzComputation to complete
     chrono::duration<double> collatzComputationTime = getDuration(start, end);
+
+    if (locking) { //avoid race conditions
+        lock_guard<mutex> lock(histMutex);
+        histogramArray.push_back(collatzComputationTime);
+    } else {
+        histogramArray.push_back(collatzComputationTime);
+    }
     
     // Stores the collatzComputation time in histogramArray vector
-    lock_guard<mutex> lock(histMutex);
-    histogramArray.push_back(collatzComputationTime);
+    //lock_guard<mutex> lock(histMutex);
+    //histogramArray.push_back(collatzComputationTime);
 }
+
+/*void workLock () {
+    while (true) {
+        long x;
+        if (locking) {
+            lock_guard<mutex> lock(histMutex);
+            if (COUNTER > N) {
+                x = COUNTER++;
+            } else {
+                x = COUNTER++;
+                if (x > N) return;
+            }
+            collatzCompute((int)x);
+        }
+    }
+}*/
 
 void writeCSV() {
     fstream fout; // file pointer
@@ -63,10 +88,20 @@ void writeCSV() {
     fout.close();
 }
 
-int main() {
-    auto histogramArrayStart = chrono::high_resolution_clock::now();
-    int T = 4; // num of threads
-    int N = 1000; // range of numbers for a Collatz sequence to be computed
+int main(int args, char* argv[]) {
+    if (args < 3) {
+        cerr << "Error ./mt-collatz N T [-nolock]" << endl;
+        return 1;
+    }
+    long N = stol(argv[1]);
+    int T = stoi(argv[2]);
+
+    if (args ==4 && strcmp(argv[3], "-nolock") == 0) { //checks for lock argument
+        locking = false;
+    }
+    
+    //int T = 4; // num of threads
+    //int N = 1000; // range of numbers for a Collatz sequence to be computed
 
     // Trivial case handling
     if (T <= 0) {
@@ -78,6 +113,7 @@ int main() {
     if (T > N) { // avoids creating more threads than units of work
         T = N;
     }
+    auto histogramArrayStart = chrono::high_resolution_clock::now();
 
     
     // Computing chunk sizes for dividing workload of sequence computation among threads 
@@ -131,6 +167,10 @@ int main() {
     }
     
     writeCSV();
+
+    cout << "Completed " << N << " computations with " << T << " threads" << endl;
+    cout << "Locking: " << (locking ? "enabled" : "disabled") << endl;
+    cout << "Time: " << histogramArrayTime.count() << "seconds" << endl;
 
     return 0;
 }
