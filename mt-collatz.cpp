@@ -41,12 +41,11 @@ void collatzCompute(int n) {
     } else {
         histogramArray.push_back(collatzComputationTime);
     }
-    
-    // Stores the collatzComputation time in histogramArray vector
-    //lock_guard<mutex> lock(histMutex);
-    //histogramArray.push_back(collatzComputationTime);
 }
 
+/*
+Writes all the times that are stored in histogramArray to a .csv filed named collatzTime.csv
+*/
 void writeCSV() {
     ofstream fout("collatzTime.csv");
     if (!fout.is_open()){
@@ -60,7 +59,7 @@ void writeCSV() {
 
 int main(int args, char* argv[]) {
     if (args < 3) {
-        cerr << "Usage: ./mt-collatz N T [-nolock]" << endl;
+        cerr << "Usage: ./mt-collatz N T [-nolock]" << endl; // Tells user how to properly execute program in terminal
         return 1;
     }
     long N = stol(argv[1]);
@@ -120,13 +119,7 @@ int main(int args, char* argv[]) {
     }
 
     auto histogramArrayEnd = chrono::high_resolution_clock::now();
-    auto histogramArrayTime = histogramArrayEnd - histogramArrayStart;
-    
-
-    // testing: prints times in histogramArray
-    /*for (int i = 0; i < histogramArray.size(); i++) { 
-        cout << "Collatz Computation Time: " << histogramArray[i].count() << endl; 
-    } */
+    auto histogramArrayTime = histogramArrayEnd - histogramArrayStart; // used for measuring the total time to population histogramArray with the typed in inputs
 
     if (histogramArray.size() == 0) {
         cerr << "An error occurred with storing computation times inside the histogramArray. It is empty." << endl;
@@ -159,4 +152,5 @@ Sources:
 
 
 */
+
 
