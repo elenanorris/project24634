@@ -1,4 +1,4 @@
 all:
-   g++ -std=c++17 -Wall -g -pthread mt-collatz.cpp -o mt-collatz
+	g++ -std=c++17 -Wall -g -pthread mt-collatz.cpp -o mt-collatz
 clean:
-   rm -f mt-collatz
+	rm -f mt-collatz
