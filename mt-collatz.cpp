@@ -3,6 +3,7 @@
 #include <mutex>
 #include <vector>
 #include <string>
+#include <cstring> // for strcmp
 #include <fstream>
 #include <chrono>
 using namespace std;
@@ -119,7 +120,7 @@ int main(int args, char* argv[]) {
     }
 
     auto histogramArrayEnd = chrono::high_resolution_clock::now();
-    auto histogramArrayTime = histogramArrayEnd - hisotgramArrayStart;
+    auto histogramArrayTime = histogramArrayEnd - histogramArrayStart;
     
 
     // testing: prints times in histogramArray
@@ -158,3 +159,4 @@ Sources:
 
 
 */
+
