@@ -77,7 +77,7 @@ int main(int args, char* argv[]) {
     }
 
     histogramArray.resize(N); // must pre-allocate vector to avoid segmentation fault when running with -nolock
-    auto histogramArrayStart = chrono::high_resolution_clock::now();
+    auto histogramArrayStart = chrono::steady_clock::now();
     
     // Computing chunk sizes for dividing workload of sequence computation among threads 
     int base = N / T;
@@ -114,8 +114,8 @@ int main(int args, char* argv[]) {
         }
     }
 
-    auto histogramArrayEnd = chrono::high_resolution_clock::now();
-    auto histogramArrayTime = histogramArrayEnd - histogramArrayStart; // used for measuring the total time to population histogramArray with the typed in inputs
+    auto histogramArrayEnd = chrono::steady_clock::now();
+    auto histogramArrayTime = chrono::duration<double>(histogramArrayEnd - histogramArrayStart); // used for measuring the total time to population histogramArray with the typed in inputs
 
     if (histogramArray.size() == 0) {
         cerr << "An error occurred with storing computation times inside the histogramArray. It is empty." << endl;
@@ -148,6 +148,7 @@ Sources:
 
 
 */
+
 
 
 
