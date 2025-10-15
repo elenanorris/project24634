@@ -16,9 +16,8 @@ bool locking = true;
 collatzCompute() measures the time it takes to compute a Collatz sequence
 of a given integer n, and it then stores that time in the histogramArray vector.
 */
-void collatzCompute(int n) {
-    // Starts measurement of Collatz sequence computation
-    auto start = chrono::high_resolution_clock::now();
+void collatzCompute(long long n, size_t index) {
+    auto start = chrono::high_resolution_clock::now(); // Starts measurement of Collatz sequence computation
 
     while (n != 1) { // Base case for Collatz sequence
         if (n % 2 == 1) { // If n is odd
@@ -28,18 +27,15 @@ void collatzCompute(int n) {
             n = n / 2;
         }
     }
-    // end of collatz sequence computation
-
-    // Ends measurement of Collatz sequence computation
-    auto end = chrono::high_resolution_clock::now();
-    // Computes time it took for collatzComputation to complete
-    auto collatzComputationTime = end-start;
+    
+    auto end = chrono::high_resolution_clock::now(); // Ends measurement of Collatz sequence computation
+    auto collatzComputationTime = end-start; // Computes time it took for collatzComputation to complete
 
     if (locking) { //avoid race conditions
         lock_guard<mutex> lock(histMutex);
-        histogramArray.push_back(collatzComputationTime);
+        histogramArray[index] = collatzComputationTime;
     } else {
-        histogramArray.push_back(collatzComputationTime);
+        histogramArray[index] = collatzComputationTime; // need unique indices to keep threads safe
     }
 }
 
@@ -79,13 +75,13 @@ int main(int args, char* argv[]) {
     if (T > N) { // avoids creating more threads than units of work
         T = N;
     }
-    auto histogramArrayStart = chrono::high_resolution_clock::now();
 
+    histogramArray.resize(N); // must pre-allocate vector to avoid segmentation fault when running with -nolock
+    auto histogramArrayStart = chrono::high_resolution_clock::now();
     
     // Computing chunk sizes for dividing workload of sequence computation among threads 
     int base = N / T;
     int remainder = N % T;
-
     vector<thread> threads;
     threads.reserve(T);
 
@@ -152,5 +148,6 @@ Sources:
 
 
 */
+
 
 
