@@ -100,7 +100,7 @@ int main(int args, char* argv[]) {
         // Have threads process to compute their Collatz sequence chunks and store their times in histogramArray
         threads.emplace_back([start, end]() {
             for (int i = start; i < end; i++) {
-                collatzCompute(i + 1); // each thread processes its chunk. Collatz are 
+                collatzCompute(static_cast<long long>(i + 1), i); // each thread processes its chunk. Collatz are 
             }
             });
 
@@ -148,6 +148,7 @@ Sources:
 
 
 */
+
 
 
 
