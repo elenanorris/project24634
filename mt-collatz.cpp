@@ -10,20 +10,6 @@ using namespace std;
 vector<chrono::duration<double>> histogramArray; // stores the computed times of the Collatz sequence for specific integers n from collatzCompute()
 mutex histMutex; // ensures only one thread accesses a shared resource at a time
 bool locking = true;
-long N;
-int T;
-/*
-Below is the helper function for collatzCompute().
-It returns the duration of an operation by computing the difference
-between the end and start times of collatzCompute().
-*/ 
-chrono::duration<double> getDuration(
-    chrono::time_point<chrono::high_resolution_clock> start,
-    chrono::time_point<chrono::high_resolution_clock> end)
-{
-    chrono::duration<double> duration = end - start;
-    return duration;
-}
 
 /*
 collatzCompute() measures the time it takes to compute a Collatz sequence
@@ -45,9 +31,8 @@ void collatzCompute(int n) {
 
     // Ends measurement of Collatz sequence computation
     auto end = chrono::high_resolution_clock::now();
-
     // Computes time it took for collatzComputation to complete
-    chrono::duration<double> collatzComputationTime = getDuration(start, end);
+    auto collatzComputationTime = end-start;
 
     if (locking) { //avoid race conditions
         lock_guard<mutex> lock(histMutex);
@@ -61,36 +46,20 @@ void collatzCompute(int n) {
     //histogramArray.push_back(collatzComputationTime);
 }
 
-/*void workLock () {
-    while (true) {
-        long x;
-        if (locking) {
-            lock_guard<mutex> lock(histMutex);
-            if (COUNTER > N) {
-                x = COUNTER++;
-            } else {
-                x = COUNTER++;
-                if (x > N) return;
-            }
-            collatzCompute((int)x);
-        }
-    }
-}*/
-
 void writeCSV() {
-    fstream fout; // file pointer
-
-    fout.open("collatzTime.csv", ios::out); // opens existing .csv file or creates new file
-    
-    for (int i = 0; i < histogramArray.size(); i++) {
-        fout << histogramArray[i].count() << "\n";
+    ofstream fout("collatzTime.csv");
+    if (!fout.is_open()){
+        cerr << "Error: Failed to open collatzTime.csv" << endl;
+        return;
     }
-    fout.close();
+    for (const auto& time : histogramArray){
+        fout << time.count() << "\n";
+    }
 }
 
 int main(int args, char* argv[]) {
     if (args < 3) {
-        cerr << "Error ./mt-collatz N T [-nolock]" << endl;
+        cerr << "Usage: ./mt-collatz N T [-nolock]" << endl;
         return 1;
     }
     long N = stol(argv[1]);
@@ -99,9 +68,6 @@ int main(int args, char* argv[]) {
     if (args ==4 && strcmp(argv[3], "-nolock") == 0) { //checks for lock argument
         locking = false;
     }
-    
-    //int T = 4; // num of threads
-    //int N = 1000; // range of numbers for a Collatz sequence to be computed
 
     // Trivial case handling
     if (T <= 0) {
@@ -153,8 +119,7 @@ int main(int args, char* argv[]) {
     }
 
     auto histogramArrayEnd = chrono::high_resolution_clock::now();
-    
-    chrono::duration<double> histogramArrayTime = getDuration(histogramArrayStart, histogramArrayEnd);
+    auto histogramArrayTime = histogramArrayEnd - hisotgramArrayStart;
     
 
     // testing: prints times in histogramArray
@@ -190,5 +155,6 @@ Sources:
 [9] Lambda functions in C++: https://www.w3schools.com/cpp/cpp_functions_lambda.asp
 [10] Mutex lock for thread synchronization: https://www.geeksforgeeks.org/linux-unix/mutex-lock-for-linux-thread-synchronization/
 [11] Writing elements of a vector to a .CSV file in C++: https://www.geeksforgeeks.org/cpp/csv-file-management-using-c/
+
 
 */
